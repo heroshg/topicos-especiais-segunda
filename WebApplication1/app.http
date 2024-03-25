@@ -1,0 +1,16 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+###
+GET https://localhost:7053/api/produtos
+
+###
+POST https://localhost:7053/api/produtos
+Content-Type: application/json
+Accept-Language: pt-BR,PT;q=0.5
+
+{
+     
+   "nome": "Garrafa",
+   "descricao": "Garrafa 2L Growth"
+}
+
+
