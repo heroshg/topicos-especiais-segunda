@@ -1,21 +1,65 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using WebApplication1.Models;
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseSqlite("Data Source=app.db");
+});
 var app = builder.Build();
 
-List<Produto> produtos = new List<Produto>();
 
-Produto produto1 = new Produto("Teclado", "Teclado gamer");
-Produto produto2 = new Produto("Iphone", "Iphone 12 128gb");
-Produto produto3 = new Produto("Notebook", "Notebook ASUS Gamer, 2060ti i7-9700k");
-produtos.Add(produto1);
-produtos.Add(produto2);
-produtos.Add(produto3);
+app.MapGet("/api/produtos",
+    async (AppDbContext context) =>
+    await context.Produtos.ToListAsync());
 
 
-app.MapGet("/api/produtos", () => produtos);
-app.MapPost("/api/produtos", (Produto produto) => produtos.Add(produto));
+app.MapGet("/api/produtos/{nome}", async ([FromRoute] string nome, AppDbContext context) => {
+   var tarefa = await context.Produtos.FirstOrDefaultAsync(p => p.Nome.ToUpper() == nome.ToUpper());
+    if(tarefa is null)
+    {
+        return  Results.NotFound("Produto não encontrado!");
+    }
+    return Results.Ok(tarefa);
+});
+app.MapPost("/api/produtos",
+    async ([FromBody] Produto produto, AppDbContext context) => {
+        if(produto != null)
+        {
+            context.Produtos.Add(produto);
+            await context.SaveChangesAsync();
+            return Results.Created("Criado com sucesso!", produto);
+        }
+        return Results.BadRequest("Falha ao registrar produto!");
+    });
+
+
+app.MapPut("/api/produtos/{nome}", async ([FromRoute] string nome, [FromBody] Produto produto, AppDbContext context) =>
+{
+    Produto? produtoRecuperado = await context.Produtos.FirstOrDefaultAsync(p => p.Nome.ToUpper() == nome.ToUpper());
+    if (produtoRecuperado == null)
+    {
+        return Results.NotFound();
+    }
+    produtoRecuperado.Nome = produto.Nome;
+    produtoRecuperado.Descricao = produto.Descricao;
+    produtoRecuperado.Quantidade = produto.Quantidade;
+    await context.SaveChangesAsync();
+    return Results.NoContent();
+
+});
+app.MapDelete("/api/produtos/{nome}", async ([FromRoute] string nome, AppDbContext context) =>
+{
+    var produtoADeletar = await context.Produtos.FirstOrDefaultAsync(a => a.Nome.ToUpper() == nome.ToUpper());
+    if(produtoADeletar == null) return Results.NotFound("Produto não encontrado!");
+    context.Remove(produtoADeletar);
+    await context.SaveChangesAsync();
+    return Results.Ok(produtoADeletar);
+});
 
 
 app.Run();
 
-public record Produto(string Nome, string Descricao);
 
