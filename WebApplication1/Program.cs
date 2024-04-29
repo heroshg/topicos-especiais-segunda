@@ -4,10 +4,12 @@ using Microsoft.Extensions.Options;
 using WebApplication1.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlite("Data Source=app.db");
 });
+
 var app = builder.Build();
 
 
